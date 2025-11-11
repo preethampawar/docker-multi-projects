@@ -1,0 +1,135 @@
+version: "3.8"
+
+services:
+#  mariadb:
+#    image: mariadb:10.11
+#    container_name: mdb
+#    env_file: .env
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#    volumes:
+#      - db_data:/var/lib/mysql
+#      - ./db-init:/docker-entrypoint-initdb.d:ro
+#    networks:
+#      - backend
+#    ports:
+#      - "3306:3306"   # remove in prod or bind to localhost only
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql8
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "3306:3306"
+    networks:
+      - backend
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "8080:80"
+    networks:
+      - backend
+    depends_on:
+      - mysql
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    restart: unless-stopped
+    ports:
+      - "8025:8025"  # Web UI (http://localhost:8025)
+      - "1025:1025"  # SMTP port
+    networks:
+      - backend
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /Users/preetham/php-projects/sprphysio:/var/www/sprphysio:ro
+      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8:/var/www/winesapp:ro # codebase for main branch
+      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-v1:/var/www/winesapp:ro # codebase for main_v1 branch
+      - /Users/preetham/php-projects/news-portal:/var/www/gramavani:ro
+    depends_on:
+      - php_spr # for sprphysio
+      - php_liq # for main branch
+      - php_liq_v1 # for main_v1 branch
+      - php_news # for laravel news portal - gramavani
+    networks:
+      - frontend
+      - backend
+
+  php_spr:
+    build:
+      context: ./php-fpm
+      dockerfile: Dockerfile
+    container_name: php_spr
+    volumes:
+      - /Users/preetham/php-projects/sprphysio:/var/www/sprphysio
+      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      - backend
+
+  # PHP-FPM service for the 'main' branch of liq-webapp (newer version)
+  php_liq:
+    build:
+      context: ./php-fpm
+      dockerfile: Dockerfile
+    container_name: php_liq
+    volumes:
+      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8:/var/www/winesapp
+      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      - backend
+
+  # PHP-FPM service for the 'main_v1' branch of liq-webapp (older version)
+  php_liq_v1:
+    build:
+      context: ./php-fpm
+      dockerfile: Dockerfile
+    container_name: php_liq_v1
+    volumes:
+      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-v1:/var/www/winesapp
+      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      - backend
+
+  php_news:
+    build:
+      context: ./php-fpm
+      dockerfile: Dockerfile
+    container_name: php_news
+    volumes:
+      - /Users/preetham/php-projects/news-portal:/var/www/gramavani
+      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      - backend
+
+volumes:
+  db_data:
+
+networks:
+  frontend: {}
+  backend:
+    driver: bridge
+
