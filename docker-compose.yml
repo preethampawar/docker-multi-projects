@@ -34,6 +34,12 @@ services:
     networks:
       - backend
 
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8081:8080
+
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: phpmyadmin
@@ -68,12 +74,14 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - /Users/preetham/php-projects/sprphysio:/var/www/sprphysio:ro
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8:/var/www/winesapp:ro # codebase for main branch
-      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-v1:/var/www/winesapp:ro # codebase for main_v1 branch
+      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-staging:/var/www/winesapp:ro # codebase for staging branch
+      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-v1:/var/www/winesapp:ro # codebase for main_v1 branch - old codebase
       - /Users/preetham/php-projects/news-portal:/var/www/gramavani:ro
     depends_on:
       - php_spr # for sprphysio
       - php_liq # for main branch
-      - php_liq_v1 # for main_v1 branch
+      - php_liq_staging # for staging branch
+      - php_liq_v1 # for main_v1 branch - old version
       - php_news # for laravel news portal - gramavani
     networks:
       - frontend
@@ -98,6 +106,18 @@ services:
     container_name: php_liq
     volumes:
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8:/var/www/winesapp
+      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      - backend
+
+  # PHP-FPM service for the 'main' branch of liq-webapp (newer version)
+  php_liq_staging:
+    build:
+      context: ./php-fpm
+      dockerfile: Dockerfile
+    container_name: php_liq_staging
+    volumes:
+      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-staging:/var/www/winesapp
       - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
     networks:
       - backend

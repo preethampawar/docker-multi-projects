@@ -8,7 +8,7 @@ PROJECT_ROOT := /Users/preetham/php-projects
 DUMP_DIR := $(PROJECT_ROOT)/db-dumps
 MDB := mysql8   # container name for mysql
 
-.PHONY: help up down restart logs bash-spr bash-liq bash-liq-v1 bash-news import backup backup-all test-nginx-config laravel-key laravel-cache laravel-migrate laravel-seed laravel-build laravel-watch npm-install composer-install
+.PHONY: help up down restart logs bash-spr bash-liq bash-liq-staging bash-liq-v1 bash-news import backup backup-all test-nginx-config laravel-key laravel-cache laravel-migrate laravel-seed laravel-build laravel-watch npm-install composer-install
 
 # ============================================================
 # 🧭 HELP MENU
@@ -31,6 +31,7 @@ help:
 	@echo "-----------------------------------------------"
 	@echo "  make bash-spr         🧩 Access shell of CakePHP app (sprphysio)"
 	@echo "  make bash-liq         🧩 Access shell of CakePHP app (winesapp, main branch)"
+	@echo "  make bash-liq-staging 🧩 Access shell of CakePHP app (winesapp, staging branch)"
 	@echo "  make bash-liq-v1      🧩 Access shell of CakePHP app (winesapp-v1, main_v1 branch)"
 	@echo "  make bash-news        🧩 Access shell of Laravel app (news-portal)"
 	@echo ""
@@ -118,6 +119,9 @@ bash-spr:
 
 bash-liq:
 	docker exec -it php_liq bash
+
+bash-liq-staging:
+	docker exec -it php_liq_staging bash
 
 bash-liq-v1:
 	docker exec -it php_liq_v1 bash
