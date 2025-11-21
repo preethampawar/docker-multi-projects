@@ -37,19 +37,21 @@ services:
     restart: always
     ports:
       - 8081:8080
-
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: phpmyadmin
-    environment:
-      PMA_HOST: mysql
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    ports:
-      - "8080:80"
     networks:
       - backend
-    depends_on:
-      - mysql
+
+#  phpmyadmin:
+#    image: phpmyadmin:latest
+#    container_name: phpmyadmin
+#    environment:
+#      PMA_HOST: mysql
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#    ports:
+#      - "8080:80"
+#    networks:
+#      - backend
+#    depends_on:
+#      - mysql
 
   mailhog:
     image: mailhog/mailhog:latest
@@ -74,9 +76,9 @@ services:
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-staging:/var/www/winesapp_staging:ro # codebase for staging branch
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-v1:/var/www/winesapp_v1:ro # codebase for main_v1 branch - old codebase
       - /Users/preetham/php-projects/news-portal:/var/www/gramavani:ro
-      - /Users/preetham/php-projects/sprphysio:/var/www/sprphysio:ro
+      - /Users/preetham/php-projects/pnursery-clients:/var/www/pnursery-clients:ro
     depends_on:
-      - php_spr # for sprphysio
+      - php_pnursery_clients # for plants nursery
       - php_liq # for main branch
       - php_liq_staging # for staging branch
       - php_liq_v1 # for main_v1 branch - old version
@@ -85,13 +87,13 @@ services:
       - frontend
       - backend
 
-  php_spr:
+  php_pnursery_clients:
     build:
       context: ./php-fpm
       dockerfile: Dockerfile
-    container_name: php_spr
+    container_name: php_pnursery_clients
     volumes:
-      - /Users/preetham/php-projects/sprphysio:/var/www/sprphysio
+      - /Users/preetham/php-projects/pnursery-clients:/var/www/pnursery-clients
       - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
     networks:
       - backend
