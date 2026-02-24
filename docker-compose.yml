@@ -73,18 +73,31 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8:/var/www/winesapp_main:ro # codebase for main branch
-      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-staging:/var/www/winesapp_staging:ro # codebase for staging branch
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-v1:/var/www/winesapp_v1:ro # codebase for main_v1 branch - old codebase
+      - /Users/preetham/php-projects/liq-mobile-responsive-cakephp210-php8:/var/www/winesapp_v1_mobile:ro # codebase for old mobile app - main branch
       - /Users/preetham/php-projects/news-portal:/var/www/gramavani:ro
+      - /Users/preetham/php-projects/pnursery-base:/var/www/pnursery-base:ro
       - /Users/preetham/php-projects/pnursery-clients:/var/www/pnursery-clients:ro
     depends_on:
-      - php_pnursery_clients # for plants nursery
+      - php_pnursery_base # for plants nursery base site
+      - php_pnursery_clients # for plants nursery clients
       - php_liq # for main branch
-      - php_liq_staging # for staging branch
       - php_liq_v1 # for main_v1 branch - old version
+      - php_liq_v1_mobile # for main branch - old version
       - php_news # for laravel news portal - gramavani
     networks:
       - frontend
+      - backend
+
+  php_pnursery_base:
+    build:
+      context: ./php-fpm
+      dockerfile: Dockerfile
+    container_name: php_pnursery_base
+    volumes:
+      - /Users/preetham/php-projects/pnursery-base:/var/www/pnursery-base
+      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
       - backend
 
   php_pnursery_clients:
@@ -111,16 +124,16 @@ services:
       - backend
 
   # PHP-FPM service for the 'staging' branch of liq-webapp (newer version)
-  php_liq_staging:
-    build:
-      context: ./php-fpm
-      dockerfile: Dockerfile
-    container_name: php_liq_staging
-    volumes:
-      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-staging:/var/www/winesapp_staging
-      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
-    networks:
-      - backend
+#  php_liq_staging:
+#    build:
+#      context: ./php-fpm
+#      dockerfile: Dockerfile
+#    container_name: php_liq_staging
+#    volumes:
+#      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-staging:/var/www/winesapp_staging
+#      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+#    networks:
+#      - backend
 
   # PHP-FPM service for the 'main_v1' branch of liq-webapp (older version)
   php_liq_v1:
@@ -130,6 +143,18 @@ services:
     container_name: php_liq_v1
     volumes:
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-v1:/var/www/winesapp_v1
+      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      - backend
+
+  # PHP-FPM service for the old mobile app 'main' branch of liq-mobile-responsive-cakephp210-php8
+  php_liq_v1_mobile:
+    build:
+      context: ./php-fpm
+      dockerfile: Dockerfile
+    container_name: php_liq_v1_mobile
+    volumes:
+      - /Users/preetham/php-projects/liq-mobile-responsive-cakephp210-php8:/var/www/winesapp_v1_mobile
       - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
     networks:
       - backend
