@@ -1,3 +1,28 @@
+# =============================================================================
+# Docker Multi-Projects — Service Access Reference
+# =============================================================================
+# Web apps  (add the *.lc hostnames to /etc/hosts → 127.0.0.1)
+#   pnursery-base       http://pnursery.lc                         (php_pnursery_base)
+#   pnursery-clients    http://safinursery.pnursery.lc             (php_pnursery_clients)
+#                       http://greengrowersnursery.pnursery.lc
+#                       http://saibaba.pnursery.lc
+#                       http://sprphysio.lc
+#   winesapp (main)     http://winesapp.lc                         (php_liq)
+#   winesapp v1         http://winesapp_v1.lc                      (php_liq_v1)
+#   winesapp v1 mobile  http://closingstock.winesapp_v1.lc         (php_liq_v1_mobile)
+#   gramavani           http://gramavani.lc                        (php_news, Laravel)
+#
+# Admin / dev tools
+#   Adminer             http://localhost:8081     (server: mysql, user: root, pass: see .env)
+#   MailHog UI          http://localhost:8025     (SMTP host: mailhog, SMTP port: 1025)
+#
+# MySQL  (host: localhost:3306 from host, mysql:3306 from containers)
+#   root / root                                  (MYSQL_ROOT_PASSWORD in .env)
+#   spr_user  / spr_pass                         (pnursery apps)
+#   liq_user  / liq_pass                         (winesapp main / v1 / mobile)
+#   news_user / news_pass                        (gramavani / Laravel)
+#   NOTE: all app users currently have GRANT ALL ON *.* — local-dev only.
+# =============================================================================
 services:
 #  mariadb:
 #    image: mariadb:10.11
@@ -27,16 +52,24 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./db-init:/docker-entrypoint-initdb.d:ro
+      - ./mysql/my.cnf:/etc/mysql/conf.d/zz-tuning.cnf:ro
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
 
   adminer:
     image: adminer
-    restart: always
+    container_name: adminer
+    restart: unless-stopped
     ports:
-      - 8081:8080
+      - "8081:8080"
     networks:
       - backend
 
@@ -66,12 +99,14 @@ services:
   nginx:
     image: nginx:stable-alpine
     container_name: nginx
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8:/var/www/winesapp_main:ro # codebase for main branch
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-v1:/var/www/winesapp_v1:ro # codebase for main_v1 branch - old codebase
       - /Users/preetham/php-projects/liq-mobile-responsive-cakephp210-php8:/var/www/winesapp_v1_mobile:ro # codebase for old mobile app - main branch
@@ -94,9 +129,14 @@ services:
       context: ./php-fpm
       dockerfile: Dockerfile
     container_name: php_pnursery_base
+    restart: unless-stopped
     volumes:
       - /Users/preetham/php-projects/pnursery-base:/var/www/pnursery-base
       - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+      - ./php-fpm/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - backend
 
@@ -105,9 +145,14 @@ services:
       context: ./php-fpm
       dockerfile: Dockerfile
     container_name: php_pnursery_clients
+    restart: unless-stopped
     volumes:
       - /Users/preetham/php-projects/pnursery-clients:/var/www/pnursery-clients
       - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+      - ./php-fpm/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - backend
 
@@ -117,9 +162,14 @@ services:
       context: ./php-fpm
       dockerfile: Dockerfile
     container_name: php_liq
+    restart: unless-stopped
     volumes:
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8:/var/www/winesapp_main
       - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+      - ./php-fpm/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - backend
 
@@ -132,6 +182,7 @@ services:
 #    volumes:
 #      - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-staging:/var/www/winesapp_staging
 #      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+#      - ./php-fpm/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
 #    networks:
 #      - backend
 
@@ -141,9 +192,14 @@ services:
       context: ./php-fpm
       dockerfile: Dockerfile
     container_name: php_liq_v1
+    restart: unless-stopped
     volumes:
       - /Users/preetham/php-projects/liq-webapp-cakephp210-php8-v1:/var/www/winesapp_v1
       - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+      - ./php-fpm/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - backend
 
@@ -153,9 +209,14 @@ services:
       context: ./php-fpm
       dockerfile: Dockerfile
     container_name: php_liq_v1_mobile
+    restart: unless-stopped
     volumes:
       - /Users/preetham/php-projects/liq-mobile-responsive-cakephp210-php8:/var/www/winesapp_v1_mobile
       - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+      - ./php-fpm/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - backend
 
@@ -164,9 +225,14 @@ services:
       context: ./php-fpm
       dockerfile: Dockerfile
     container_name: php_news
+    restart: unless-stopped
     volumes:
       - /Users/preetham/php-projects/news-portal:/var/www/gramavani
       - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+      - ./php-fpm/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - backend
 
